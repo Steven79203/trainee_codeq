@@ -308,13 +308,15 @@ def draw_circuits_parameters():
 def aboutMe():
     about = Tk()
     about.title("Sobre")
-    app.geometry("300x250")
-    title = Label(about, text="ModelDemo",font=("Arial Bold",12))
+    app.geometry("300x300")
+    title = Label(about, text="Model Visualizer",font=("Arial Bold",12))
     title.place(x=10, y=10, width=280, height=50)
     content = Label(about, text="Programa desenvolvido para o processo\n trainee da CodeQ em 2022/2")
     content.place(x=10,y=70, width=280, height=50)
     autors = Label(about, text="Autores:\nEstêvão Mendes Santana\nYuri Mewius\nVítor Soares Gonçalves")
     autors.place(x=10, y=130, width=280, height=90)
+    year_label = Label(about, text="Universidade Federal de Santa Maria\nOutubro de 2022")
+    year_label.place(x=10, y=230, width=280, height=35)
     about.mainloop()
 
 def main_app():
@@ -390,7 +392,5 @@ wpos = {
 
 main_app()
 draw_main_widgets()
-draw_model_switcher()
-draw_circuits_parameters()
-
+set_model("tank")
 app.mainloop()
