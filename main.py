@@ -5,7 +5,6 @@
 # matemáticos na resolução de 
 # problemas comuns à engenharia
 
-from matplotlib import gridspec
 from scipy.integrate import odeint 
 from scipy.integrate import quad
 
@@ -20,7 +19,7 @@ from tkinter import *
 sym.init_printing(use_unicode=True)
 
 
-# Symbolic expressions and solution
+# Symbolic expressions and data
 def sym_tank():
 
     def tank(Q, t, Fin, Fout, Cin, V):
@@ -40,14 +39,14 @@ def sym_tank():
 
     t_range = np.arange(0, ftime, 1)
     F = sym.dsolve(expr, ics={Q.subs(t,Q0):0})
-#    y = [F.subs(t,time).rhs for time in t_range]
+#   y = [F.subs(t,time).rhs for time in t_range]
     y = odeint(tank, Q0, t_range, args=(Fin, Fout, Cin, V))
 
     return (F, t_range, y)
 
 def sym_reactor_batch():
+    # Reação irreversível elementar do tipo A -> B
     X = sym.symbols('X')
-    
     order = int(order_var.get())
     k     = float(k_entry.get())
     Cao   = float(Cao_entry.get())
@@ -68,12 +67,24 @@ def sym_reactor_batch():
     return (F, X_range, t_range)
 
 def sym_reactor_pfr():
-    X = sym.symbols("X")
 
-    k = 0.01
-    v = 10
-    exp = (v/k) * (1/(1-X))
-    return sym.integrate(exp,X)
+    # Reação irreversível elementar do tipo 1A -> 1B
+    X = sym.symbols("X")
+    k = float(k_entry.get())
+    v = float(flux_entry.get())
+    Cao = float(Cao_entry.get())
+    order = float(order_var.get())
+
+    if(order == 1):
+        exp =(v/k) * (1/(1-X))
+    elif (order == 2):
+        exp = (v/Cao*k) * (1/(1-X)**2)
+
+    F = sym.integrate(exp, X)
+    X_range = np.arange(0, 1, 0.01)
+    v_range = [sym.re(F.subs(X,x)) for x in X_range]
+
+    return (F, X_range, v_range)
 
 def sym_circuits():
 
@@ -161,12 +172,14 @@ def set_data():
         set_formula(data[0])
         plot((data[1::]), "tempo(min)","corrente(A)")
 # Set model to use
-def set_model():
-    model = model_var.get()
+def set_model(model):
+    
     clearframe(params)
     draw_model_switcher()
+    model_var.set(model)
+
     if(model == "batch" or model == "pfr"):
-        draw_reactor_parameters()
+        draw_reactor_parameters(model)
         return
     if(model == "tank"):
         draw_tank_widgets() 
@@ -180,10 +193,8 @@ def set_model():
 def draw_header(header_title):
     global header
     header = Label(app, 
-                text=header_title, 
-                borderwidth=2, relief="groove",
-                font=("Arial Black",20), 
-                background="#570091", foreground="#FFFFFF")
+    text=header_title, borderwidth=2, relief="groove",
+    font=("Arial Black",20), background=header_bg, foreground="#FFFFFF")
     header.place(x=wpos["header"][0], y=wpos["header"][1], width=wpos["header"][2], height=wpos["header"][3])
 
 def draw_tank_widgets():
@@ -225,8 +236,11 @@ def draw_tank_widgets():
     ftime_entry  = Entry(params)
     ftime_entry.place(x=10,y=425, width=290, height=20)
 
-def draw_reactor_parameters():
-    draw_header("Tempo de reação no reator batelada")
+def draw_reactor_parameters(model):
+    global Cao_entry, k_entry, batch_vol_entry, flux_entry
+
+    reactor_type = {"batch":"batelada","pfr":"pfr"} 
+    draw_header("Tempo de reação no reator {}".format(reactor_type[model]))
     global Cao_entry, k_entry, batch_vol_entry, flux_entry, order_var
     
     Cao_label = Label(params, text="Concentração inicial", background=labels_bg, foreground="#FFFFFF", anchor="w")
@@ -332,28 +346,27 @@ def draw_model_switcher():
     model  = Label(params, text="Modelo",background=labels_bg, foreground="#FFF", anchor="w")
     model.place(x=10, y=40, width=50, height=20)
     
-    model_entry  = OptionMenu(params, model_var, *models)
+    model_entry  = OptionMenu(params, model_var, *models, command=set_model)
     model_entry.place(x=60, y=40, width=75, height=30)
-
-    model_set = Button(params, text="Set Model", command=set_model)
-    model_set.place(x=145, y=40, height=30)
 
 
 # Main Widgets
 def draw_main_widgets():
     global exp_label, result_label, params
-   
+    
+    b_width = 3
+    b_type = "groove"
+
     # Formula label
-    exp_label=Label(app, text="Fórmula", background="#570091", foreground="#FFFFFF")
+    exp_label=Label(app, text="Fórmula", background="#570091", foreground="#FFFFFF", borderwidth=b_width, relief=b_type)
     exp_label.place(x=wpos["exp"][0], y=wpos["exp"][1], width=wpos["exp"][2], height=wpos["exp"][3])
     
     # Result label
-    result_label=Label(app, text="Plot", background="#9a34cc", foreground="#FFF")
+    result_label=Label(app, text="Plot", background="#9a34cc", foreground="#FFF", borderwidth=b_width, relief=b_type)
     result_label.place(x=wpos["res"][0], y=wpos["res"][1], width=wpos["res"][2], height=wpos["res"][3])
-    #plot((0,0))
     
     # Parameters label
-    params=Label(app, text="Parameters", background=labels_bg, foreground="#FFF", anchor="n")
+    params=Label(app, text="Parameters", background=labels_bg, foreground="#FFF", anchor="n", borderwidth=b_width, relief=b_type)
     params.place(x=wpos["params"][0], y=wpos["params"][1], width=wpos["params"][2], height=wpos["params"][3])
     
     Button(app,text="Calcular",command=set_data).place(
@@ -361,7 +374,7 @@ def draw_main_widgets():
 
 
 # Widgets colors
-header_bg  = ""
+header_bg  = "#570091"
 labels_bg  = "#6400cd"
 formula_bg = "#570091"
 result_bg  = "#9A34CC"
@@ -373,11 +386,6 @@ wpos = {
    "res"   : [10,  130, 480, 470],
    "params": [510, 70,  310, 470],
    "button": [510, 550, 310, 40 ]
-}
-
-# Tank entries positions
-tpos = {
-
 }
 
 main_app()
