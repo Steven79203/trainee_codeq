@@ -6,13 +6,12 @@
 # problemas comuns à engenharia
 
 from scipy.integrate import odeint 
-from scipy.integrate import quad
 
 import sympy as sym
 import numpy as np
 
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,NavigationToolbar2Tk
 
 from tkinter import *
 
@@ -144,33 +143,29 @@ def set_data():
 
     def plot(data, x_label, y_label):
         clearframe(result_label)
-        figure = plt.Figure(figsize=(5,4), dpi=80,)
+        figure = plt.Figure(figsize=(5,4), dpi=80)
         figure.add_subplot(111, xlabel=x_label, ylabel=y_label).plot(data[0],data[1])
         chart = FigureCanvasTkAgg(figure, result_label)
+        NavigationToolbar2Tk(chart, result_label)
         chart.draw()
         chart.get_tk_widget().pack(fill="both", expand=True)
 
-    model = model_var.get()
-    if(model == "tank"):
-        data = sym_tank()
-        set_formula(data[0])
-        plot(data[1::],"time (min)", "mass (g)")
-    if(model == "pfr"):
-        data = sym_reactor_pfr()
-        set_formula(data[0])
-        plot(data[1::], "conversão(X)", "Volume (dm³)")
-    if(model == "batch"):
-        data = sym_reactor_batch()
-        set_formula(data[0])
-        plot((data[1::]), "conversão(X)", "tempo(min)")
-    if(model == "circuits"):
-        data = sym_circuits()
-        set_formula(data[0])
-        plot((data[1::]), "tempo(min)","corrente(A)")
-    if(model == "circuits_2"):
-        data = sym_circuits_2()
-        set_formula(data[0])
-        plot((data[1::]), "tempo(min)","corrente(A)")
+    models = {
+        "tank"      :(sym_tank          ,"time(min)"    ,"mass(g)"    ),
+        "pfr"       :(sym_reactor_pfr   ,'conversão(X)' ,'volume(dm³)'),
+        "batch"     :(sym_reactor_batch ,'conversão(X)' ,"tempo(min)" ),
+        "circuits"  :(sym_circuits      ,'tempo(min)'   ,'corrente(A)'),
+        "circuits_2":(sym_circuits_2    ,'tempo(min)'   ,'corrente(A)')
+    }
+
+    model   = model_var.get()
+    data    = models[model][0]()
+    label_x = models[model][1]
+    label_y = models[model][2]
+
+    set_formula(data[0])
+    plot(data[1::],label_x, label_y)
+
 # Set model to use
 def set_model(model):
     
@@ -359,15 +354,32 @@ def draw_main_widgets():
     b_width = 3
     b_type = "groove"
 
-    # Formula label
+    # Frames 
+    # title_header = Frame(app)
+    # title_header.place()
+
+    # formula_frame = Frame(app)
+    # formula_frame.place()
+
+    # plot_frame = Frame(app)
+    # plot_frame.place()
+
+    # model_switcher = Frame(app)
+    # model_switcher.place()
+
+    # params_frame = Frame(, background="", foreground="")
+    # params_frame.place(x=,y=,width=,height=)
+
+    # button_frame = Frame(app)
+    # button_frame.place()
+    
+    # Labels
     exp_label=Label(app, text="Fórmula", background="#570091", foreground="#FFFFFF", borderwidth=b_width, relief=b_type)
     exp_label.place(x=wpos["exp"][0], y=wpos["exp"][1], width=wpos["exp"][2], height=wpos["exp"][3])
     
-    # Result label
     result_label=Label(app, text="Plot", background="#9a34cc", foreground="#FFF", borderwidth=b_width, relief=b_type)
     result_label.place(x=wpos["res"][0], y=wpos["res"][1], width=wpos["res"][2], height=wpos["res"][3])
     
-    # Parameters label
     params=Label(app, text="Parameters", background=labels_bg, foreground="#FFF", anchor="n", borderwidth=b_width, relief=b_type)
     params.place(x=wpos["params"][0], y=wpos["params"][1], width=wpos["params"][2], height=wpos["params"][3])
     
