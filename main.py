@@ -24,23 +24,26 @@ def sym_tank():
     def tank(Q, t, Fin, Fout, Cin, V):
         return Fin*Cin - Fout*(Q/V)
 
-    Fin   = float(Fin_entry.get())
-    Fout  = float(Fout_entry.get())
-    Cin   = float(Cin_entry.get())
-    V     = float(Vol_entry.get())
+    # Leitura dos dados dos campos de parâmetros
+    Fin   = float(Fin_entry.get()  )
+    Fout  = float(Fout_entry.get() )
+    Cin   = float(Cin_entry.get()  )
+    V     = float(Vol_entry.get()  )
     ftime = float(ftime_entry.get())
-    Q0    = float(Q0_entry.get())
+    Q0    = float(Q0_entry.get()   )
 
+    # Definição das viriáveis e funções símbolicas
     t = sym.symbols('t')
     Q = sym.Function('Q')(t)
     dQdt = Q.diff(t)
     expr = sym.Eq(Fin*Cin - Fout*(Q/V), dQdt)
 
+    # Resolução da EDO e cálculo dos dados para plot
     t_range = np.arange(0, ftime, 1)
     F = sym.dsolve(expr, ics={Q.subs(t,Q0):0})
-#   y = [F.subs(t,time).rhs for time in t_range]
     y = odeint(tank, Q0, t_range, args=(Fin, Fout, Cin, V))
 
+    # Retorno dos dados
     return (F, t_range, y)
 
 def sym_reactor_batch():
@@ -68,17 +71,22 @@ def sym_reactor_batch():
 def sym_reactor_pfr():
 
     # Reação irreversível elementar do tipo 1A -> 1B
+
+    # Leitura dos parâmetros
     X = sym.symbols("X")
     k = float(k_entry.get())
     v = float(flux_entry.get())
     Cao = float(Cao_entry.get())
     order = float(order_var.get())
 
+    # Determinação da expressão segundo a 
+    # ordem da reação selecionada
     if(order == 1):
         exp =(v/k) * (1/(1-X))
     elif (order == 2):
         exp = (v/Cao*k) * (1/(1-X)**2)
 
+    # Resolução da integral simbólica
     F = sym.integrate(exp, X)
     X_range = np.arange(0, 1, 0.01)
     v_range = [sym.re(F.subs(X,x)) for x in X_range]
@@ -90,22 +98,27 @@ def sym_circuits():
     def circuits(I, t, E, R, L):
         return (E-(R*I))/L
 
+    # Leitura dos dados dos campos de entrada de parâmetros
     E  = float(tension_entry.get())
     R  = float(resist_entry.get())
     I0 = float(init_curr_entry.get())
     L  = float(induction_entry.get())
     tf = float(time_range_entry.get())
 
+    # Declaração das variáveis e funções simbólicas
     t = sym.symbols('t')
     I = sym.Function('I')(t)
     dIdt = sym.diff(I,t)
     exp  = sym.Eq((E-(R*I))/L, dIdt)
+    
+    # Resolução via sym.dsolve
     F = sym.dsolve(exp, ics={I.subs(t,0):I0})
     
+    # Resolução da EDO via scipy.odeint
     t_range = np.arange(0,tf,0.01)
     sol = odeint(circuits, I0, t_range, args=(E,R,L))
-    #y = [F.subs(t,x).evalf().rhs for x in t_range]
     
+    # Retorno dos dados
     return (F, t_range, sol)
 
 def sym_circuits_2():
@@ -159,6 +172,7 @@ def set_data():
     }
 
     model   = model_var.get()
+
     data    = models[model][0]()
     label_x = models[model][1]
     label_y = models[model][2]
@@ -236,6 +250,7 @@ def draw_reactor_parameters(model):
 
     reactor_type = {"batch":"batelada","pfr":"pfr"} 
     draw_header("Tempo de reação no reator {}".format(reactor_type[model]))
+
     global Cao_entry, k_entry, batch_vol_entry, flux_entry, order_var
     
     Cao_label = Label(params, text="Concentração inicial", background=labels_bg, foreground="#FFFFFF", anchor="w")
@@ -272,7 +287,9 @@ def draw_reactor_parameters(model):
 
 def draw_circuits_parameters():
     draw_header("Corrente em um circuito")
+    
     global tension_entry, resist_entry, init_curr_entry, induction_entry, time_range_entry
+    
     tension_label = Label(params, text="Tensão inicial", background=labels_bg, foreground="#FFFFFF",anchor="w")
     tension_label.place(x=10,y=85,width=290, height=20)
     tension_entry = Entry(params)
@@ -405,4 +422,5 @@ wpos = {
 main_app()
 draw_main_widgets()
 set_model("tank")
+
 app.mainloop()
